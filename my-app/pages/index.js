@@ -1,13 +1,16 @@
-import { providers } from "ethers";
+import { Contract, providers, utils } from "ethers";
 import React, { useEffect, useRef, useState } from "react";
 import Head from "next/head";
 import Web3Modal from "web3modal";
+import {NFT_CONTRACT_ADDRESS, NFT_CONTRACT_ABI } from "../constants";
 import styles from "../styles/Home.module.css";
 
 export default function Home() {
 
   // walletConnected keep track of whether the user's wallet is connected or not 
   const [walletConnected, setWalletConnected] = useState(false)
+  const [mintingStarted, setMintingStarted] = useState(false)
+  const  [isOwner, setIsOwner] = useState(false)
 
   // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open 
   const web3ModalRef = useRef();
@@ -56,6 +59,120 @@ export default function Home() {
     }
   }
 
+  // To start the public mint of the dePlebs NFT  
+  const startPublicMint = async() => {
+    try {
+      // We need a Signer here since this is a 'writer' transaction 
+      const signer = await getProviderOrSigner(true)
+      // Create a new instance of the Contract with a Signer, which allows 
+      // update methods 
+      const dePlebContract = new Contract (
+        NFT_CONTRACT_ADDRESS,
+        NFT_CONTRACT_ABI,
+        signer
+      );
+
+        // calling the startPublicMint from contract 
+      const tx = await dePlebContract.startPublicMint()
+      await tx.wait()
+      // set the mintingStarted to true 
+      await checkIfPublicMintStarted()
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  /**
+   * checkIfPublicMintStarted: checks if the public mint has started by querying the 
+   * `publicMintStarted` variable in the contract 
+   */
+  const checkIfPublicMintStarted = async () => {
+    try {
+      // Getting the provider from web3Modal, which in our case is MetaMask 
+      // No need for the signer here, as we are only reading state from the blockchain 
+      const provider = await getProviderOrSigner();
+      // We are connecting to the Contract using a Provider, so we will only 
+      // have read-only access to Contract 
+      const dePlebContract = new Contract(
+        NFT_CONTRACT_ADDRESS,
+        NFT_CONTRACT_ABI,
+        provider
+      )
+      // call the publicMint from the contract 
+      const _publicMintStarted = await dePlebContract.publicMintStarted();
+      if (!_publicMintStarted) {
+        await getOwner();
+      }
+      setMintingStarted(_publicMintStarted);
+      return _publicMintStarted;
+    } catch (error) {
+      console.error(error);
+      return false;
+    }
+  }
+
+  /**
+   * getOwner: calls the contract to retrieve the owner
+   */
+  const getOwner = async () => {
+    try {
+        // Get the provider from web3Modal, which in our case is Metamask
+        // No need for the Signer here, as we are only reading state from the blockchain 
+      const provider = await getProviderOrSigner();
+      // We connect to the Contract using a Provider, so we will only 
+      // have read-only access to the Contract 
+      const dePlebContract = new Contract (
+        NFT_CONTRACT_ADDRESS,
+        NFT_CONTRACT_ABI,
+        provider
+      );
+      // call the owner function from the contract 
+      const _owner = await dePlebContract.owner();
+
+      // We will get the signer now to extract the address of the currently connected Metamask account 
+      const signer = await getProviderOrSigner(true);
+
+      // Get the address associated to the signer which is connected to MetaMask
+      const address = await signer.getAddress();
+
+      if (address.toLowerCase() === _owner.toLowerCase()) {
+        setIsOwner(true);        
+      } 
+    } catch (error) {
+        console.error(error.message)
+    }
+  }
+
+  const mint = async () => {
+    try {
+      const signer = await getProviderOrSigner(true);
+      // We connect to the Contract using a Provider, so we will only 
+      // have read-only access to the Contract 
+      const dePlebContract = new Contract (
+        NFT_CONTRACT_ADDRESS,
+        NFT_CONTRACT_ABI,
+        signer
+      )
+
+        // Now calling the mint function 
+      const tx = await dePlebContract.mint({
+        // value signifies the cost of one dePleb NFT which is "0.001" ethers
+        // We are parsing `0.001` string to the ether using the utils library from ether.js 
+        value: utils.parseEther("0.001")
+      });
+      await tx.wait();
+      window.alert("You successfully minted a DePleb NFT");
+    } catch (error) {
+      console.error(error)
+    }
+
+  }
+
+  const onPageLoad = async () => {
+    await connectWallet();
+    await getOwner();
+  }
+
   // useEffects are used to react to changes in state of the website
   // The array at the end of function call represents what state changes will trigger this effect
   // In this case, whenever the value of `walletConnected` changes - this effect will be called
@@ -70,11 +187,51 @@ export default function Home() {
         providerOptions: {},
         disableInjectedProvider: false,
       })
-      connectWallet();
-
-
+      
+      onPageLoad();
     }
-  }, [walletConnected]);
+  }, [walletConnected, isOwner]);
+
+  const renderButton = () => {
+    // if wallet is not connected, return a button which allows the user to connect wallet 
+    if (!walletConnected) {
+      return (
+        <button onClick={connectWallet} className={styles.button}>
+          Connect your wallet
+        </button>
+      )
+    }
+
+    // if connected user is the owner, and the public mint hasn't started yet, allow them to start the 
+    // public mint 
+    if (isOwner && !mintingStarted) {
+      return (
+        <button className={styles.button} onClick={startPublicMint}>
+          Start Public Mint
+        </button>
+      )
+    }
+
+    // If connected user is not owner and public mint hasn't yet started, inform the user 
+    if (!mintingStarted) {
+      return (
+        <div>
+          <div className={styles.description}>Public mint hasn't started!</div>
+        </div>
+      )
+    }
+
+    // If public mint has started 
+    if (mintingStarted) {
+      return(
+        <button className={styles.button} onClick={mint}>
+          Mint Now 🚀 
+        </button>
+      )
+    }
+
+
+  }
 
 
 
@@ -94,9 +251,7 @@ export default function Home() {
             /500 DePlebs have been minted
           </div>
           <div className={styles.buttonRow}>
-            <button className={styles.button}>
-              Start Mint
-            </button>
+            {renderButton()}
           </div>
           <div>
           <img className={styles.image} src="./dePlebs/1.png"/>
