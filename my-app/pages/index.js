@@ -10,7 +10,9 @@ export default function Home() {
   // walletConnected keep track of whether the user's wallet is connected or not 
   const [walletConnected, setWalletConnected] = useState(false)
   const [mintingStarted, setMintingStarted] = useState(false)
-  const  [isOwner, setIsOwner] = useState(false)
+  const [isOwner, setIsOwner] = useState(false)
+  const [tokenIdsMinted, setTokenIdsMinted] = useState("0");
+  const [loading, setLoading] = useState(false);
 
   // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open 
   const web3ModalRef = useRef();
@@ -61,6 +63,7 @@ export default function Home() {
 
   // To start the public mint of the dePlebs NFT  
   const startPublicMint = async() => {
+    setLoading(true)
     try {
       // We need a Signer here since this is a 'writer' transaction 
       const signer = await getProviderOrSigner(true)
@@ -76,10 +79,11 @@ export default function Home() {
       const tx = await dePlebContract.startPublicMint()
       await tx.wait()
       // set the mintingStarted to true 
-      await checkIfPublicMintStarted()
+      setMintingStarted(true);
     } catch (error) {
       console.error(error);
     }
+    setLoading(false)
   }
 
   /**
@@ -144,6 +148,7 @@ export default function Home() {
   }
 
   const mint = async () => {
+    setLoading(true);
     try {
       const signer = await getProviderOrSigner(true);
       // We connect to the Contract using a Provider, so we will only 
@@ -165,12 +170,46 @@ export default function Home() {
     } catch (error) {
       console.error(error)
     }
-
+    setLoading(false);
   }
+
+  /**
+   * getTokenIdsMinted: gets the number of tokenIds that have been minted to display on page
+   */
+
+  const getTokenIdsMinted = async () => {
+    try {
+      // Get the provider from the web3Modal, which in our case is MetaMask 
+      // No need for the Signer here, as we are only reading state from the blockchain
+      const provider = await getProviderOrSigner();
+      // We connect to the Contract using a Provider, so we will only 
+      // have read-only access to the Contract 
+      const dePlebContract = new Contract(
+        NFT_CONTRACT_ADDRESS,
+        NFT_CONTRACT_ABI,
+        provider
+      );
+      // calling the token ids from the contract 
+      const _tokenIds = await dePlebContract.tokenIds();
+      // _tokenIds is a `Big Number`. We need to convert the Big Number to a string 
+      // console.log(_tokenIds);
+      setTokenIdsMinted(_tokenIds.toString());
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
 
   const onPageLoad = async () => {
     await connectWallet();
     await getOwner();
+    await getTokenIdsMinted();
+
+    setInterval(async () => {
+      const publicMintStarted = await checkIfPublicMintStarted();
+      // console.log(publicMintStarted);
+    })
+    
   }
 
   // useEffects are used to react to changes in state of the website
@@ -190,7 +229,10 @@ export default function Home() {
       
       onPageLoad();
     }
-  }, [walletConnected, isOwner]);
+    setInterval(async function () {
+      await getTokenIdsMinted();
+    }, 5 * 1000);
+  }, [walletConnected, isOwner, tokenIdsMinted]);
 
   const renderButton = () => {
     // if wallet is not connected, return a button which allows the user to connect wallet 
@@ -199,6 +241,13 @@ export default function Home() {
         <button onClick={connectWallet} className={styles.button}>
           Connect your wallet
         </button>
+      )
+    }
+
+    // If we are currently waiting for something, return a loading button 
+    if (loading) {
+      return(
+        <span className={styles.description}>Loading...</span>
       )
     }
 
@@ -248,7 +297,7 @@ export default function Home() {
             It's an NFT collection of 500 degens on the Ethereum Blockchain!
           </div>
           <div className={styles.description}>
-            /500 DePlebs have been minted
+            {tokenIdsMinted}/500 DePlebs have been minted
           </div>
           <div className={styles.buttonRow}>
             {renderButton()}
