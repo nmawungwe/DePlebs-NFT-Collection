@@ -11,8 +11,9 @@ export default function Home() {
   const [walletConnected, setWalletConnected] = useState(false)
   const [mintingStarted, setMintingStarted] = useState(false)
   const [isOwner, setIsOwner] = useState(false)
-  const [tokenIdsMinted, setTokenIdsMinted] = useState("0");
+  const [tokenIdsMinted, setTokenIdsMinted] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [soldOut, setSoldOut] = useState(false);
 
   // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open 
   const web3ModalRef = useRef();
@@ -201,7 +202,16 @@ export default function Home() {
       const _tokenIds = await dePlebContract.tokenIds();
       // _tokenIds is a `Big Number`. We need to convert the Big Number to a string 
       // console.log(_tokenIds);
-      setTokenIdsMinted(_tokenIds.toString());
+      setTokenIdsMinted(_tokenIds.toNumber());
+      
+
+      if (_tokenIds.toNumber() >= 500) {
+          setSoldOut(true); 
+          setMintingStarted(false)       
+      } else {
+          setSoldOut(false);
+      }
+      
     } catch (error) {
       console.error(error)
     }
@@ -282,6 +292,15 @@ export default function Home() {
       )
     }
 
+    // If the 500 NFTs are sold out hide the mint button 
+    if(soldOut) {
+      return (
+        <button className={styles.button}>
+          Sold Out!
+        </button>
+      )
+    }
+
     // If we are currently waiting for something, return a loading button 
     if (loading) {
       return(
@@ -327,8 +346,6 @@ export default function Home() {
         </button>
       )
     }
-
-
 
   }
 
