@@ -19,7 +19,7 @@ contract DePlebs is ERC721Enumerable, Ownable {
        bool public _paused;
 
        // max number of DePlebs
-       uint256 public maxTokenIds = 1000;
+       uint256 public maxTokenIds = 500;
 
        // boolean to keep track of whether public mint has started or not
        bool public publicMintStarted;
