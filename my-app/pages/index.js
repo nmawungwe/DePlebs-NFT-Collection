@@ -158,15 +158,23 @@ export default function Home() {
         NFT_CONTRACT_ABI,
         signer
       )
-
-        // Now calling the mint function 
-      const tx = await dePlebContract.mint({
-        // value signifies the cost of one dePleb NFT which is "0.001" ethers
-        // We are parsing `0.001` string to the ether using the utils library from ether.js 
-        value: utils.parseEther("0.001")
-      });
-      await tx.wait();
-      window.alert("You successfully minted a DePleb NFT");
+      
+      const address = await signer.getAddress();
+        // Now calling the mint function
+      const ifMinted = await dePlebContract.minted(address)
+      
+      if (ifMinted) {
+        window.alert("This address has alread minted. Do not be greedy lol!");  
+      } else {
+        const tx = await dePlebContract.mint({
+          // value signifies the cost of one dePleb NFT which is "0.001" ethers
+          // We are parsing `0.001` string to the ether using the utils library from ether.js 
+          value: utils.parseEther("0.001")
+        });
+        await tx.wait();
+        window.alert("You successfully minted a DePleb NFT");  
+      }
+  
     } catch (error) {
       console.error(error)
     }

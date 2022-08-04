@@ -27,6 +27,8 @@ contract DePlebs is ERC721Enumerable, Ownable {
        // total number of tokenIds minted
        uint256 public tokenIds;
 
+        // A mapping to keep track of which addresses minted 
+        mapping (address => bool) public minted;
 
           /**
        * @dev ERC721 constructor takes in a `name` and a `symbol` to the token collection.
@@ -54,6 +56,7 @@ contract DePlebs is ERC721Enumerable, Ownable {
             require(msg.value >= _price, "Ether sent is not correct");
             tokenIds += 1;
             _safeMint(msg.sender, tokenIds);
+            minted[msg.sender] = true; 
         }
 
               /**
