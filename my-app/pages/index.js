@@ -232,7 +232,7 @@ export default function Home() {
     setInterval(async function () {
       await getTokenIdsMinted();
     }, 5 * 1000);
-  }, [walletConnected, isOwner, tokenIdsMinted]);
+  }, [walletConnected]);
 
   const renderButton = () => {
     // if wallet is not connected, return a button which allows the user to connect wallet 
@@ -256,7 +256,7 @@ export default function Home() {
     if (isOwner && !mintingStarted) {
       return (
         <button className={styles.button} onClick={startPublicMint}>
-          Start Public Mint
+          Start Public Mint!
         </button>
       )
     }
@@ -264,8 +264,8 @@ export default function Home() {
     // If connected user is not owner and public mint hasn't yet started, inform the user 
     if (!mintingStarted) {
       return (
-        <div>
-          <div className={styles.description}>Public mint hasn't started!</div>
+        <div className={styles.description}>
+          Public mint has not started yet!
         </div>
       )
     }
@@ -294,10 +294,10 @@ export default function Home() {
         <div>
           <h1 className={styles.title}>Welcome to DePlebs NFT</h1>
           <div className={styles.description}>
-            It's an NFT collection of 500 degens on the Ethereum Blockchain!
+             An NFT collection of 500 degen dogs on the Ethereum Blockchain!
           </div>
           <div className={styles.description}>
-            {tokenIdsMinted}/500 DePlebs have been minted
+            {tokenIdsMinted}/500 DePlebs have been minted.
           </div>
           <div className={styles.buttonRow}>
             {renderButton()}
