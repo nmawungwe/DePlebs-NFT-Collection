@@ -164,12 +164,12 @@ export default function Home() {
       const ifMinted = await dePlebContract.minted(address)
       
       if (ifMinted) {
-        window.alert("This address has alread minted. Do not be greedy lol!");  
+        window.alert("This address has already minted. Do not be greedy lol🧐!");  
       } else {
         const tx = await dePlebContract.mint({
           // value signifies the cost of one dePleb NFT which is "0.001" ethers
           // We are parsing `0.001` string to the ether using the utils library from ether.js 
-          value: utils.parseEther("0.001")
+          value: utils.parseEther("0.05")
         });
         await tx.wait();
         window.alert("You successfully minted a DePleb NFT");  
@@ -213,11 +213,39 @@ export default function Home() {
     await getOwner();
     await getTokenIdsMinted();
 
-    setInterval(async () => {
-      const publicMintStarted = await checkIfPublicMintStarted();
-      // console.log(publicMintStarted);
-    })
+    // setInterval(async () => {
+    //   const publicMintStarted = await checkIfPublicMintStarted();
+    //   // console.log(publicMintStarted);
+    // })
     
+  }
+
+  /**
+   * the withdraw function to only be by the owner of the contract 
+   */
+
+  const withdraw = async () => {
+    setLoading(true);
+    try {
+      const signer = await getProviderOrSigner(true);
+      // We connect to the Contract using a Provider, so we will only 
+      // have read-only access to the Contract 
+      const dePlebContract = new Contract (
+        NFT_CONTRACT_ADDRESS,
+        NFT_CONTRACT_ABI,
+        signer
+      );
+
+      const tx = await dePlebContract.withdraw();
+
+      await tx.wait()
+
+      window.alert("You succesfully withdrew Eth from your contract")
+
+    } catch (error) {
+      console.error(error);
+    }
+    setLoading(false);
   }
 
   // useEffects are used to react to changes in state of the website
@@ -239,6 +267,8 @@ export default function Home() {
     }
     setInterval(async function () {
       await getTokenIdsMinted();
+      await checkIfPublicMintStarted(); 
+      await getOwner()
     }, 5 * 1000);
   }, [walletConnected]);
 
@@ -272,9 +302,20 @@ export default function Home() {
     // If connected user is not owner and public mint hasn't yet started, inform the user 
     if (!mintingStarted) {
       return (
-        <div className={styles.description}>
-          Public mint has not started yet!
-        </div>
+      <div>
+        <button className={styles.button}>
+          Minting has not yet started!
+        </button>
+      </div>
+      )
+    }
+
+    // If owner and public mint has started 
+    if (mintingStarted && isOwner) {
+      return(
+        <button className={styles.button} onClick={withdraw}>
+          Withdraw
+        </button>
       )
     }
 
@@ -286,6 +327,7 @@ export default function Home() {
         </button>
       )
     }
+
 
 
   }
