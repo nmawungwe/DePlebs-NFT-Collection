@@ -57,6 +57,7 @@ export default function Home() {
         // Get the provider from the web3Modal, which in our case is MetaMask 
         await getProviderOrSigner();
         setWalletConnected(true);
+        window.alert("Wallet connected, mint now🚀")
     } catch (error) {
         console.log(error)
     }
@@ -170,7 +171,7 @@ export default function Home() {
         const tx = await dePlebContract.mint({
           // value signifies the cost of one dePleb NFT which is "0.001" ethers
           // We are parsing `0.001` string to the ether using the utils library from ether.js 
-          value: utils.parseEther("0.05")
+          value: utils.parseEther("0.001")
         });
         await tx.wait();
         window.alert("You successfully minted a DePleb NFT");  
@@ -279,6 +280,7 @@ export default function Home() {
       await getTokenIdsMinted();
       await checkIfPublicMintStarted(); 
       await getOwner()
+
     }, 5 * 1000);
   }, [walletConnected]);
 
