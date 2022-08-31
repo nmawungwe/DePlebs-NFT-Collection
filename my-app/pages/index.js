@@ -357,7 +357,7 @@ export default function Home() {
     <div>
       <Head>
         <title>DePlebs NFT Collection</title>
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/DePleb.ico" />
       </Head>
       <div className={styles.main}>
         <div>
